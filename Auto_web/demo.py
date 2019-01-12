@@ -8,11 +8,11 @@ driver = webdriver.Chrome()
 
 driver.get("http://www.baidu.com")
 
-# # 隐性等待
-# driver.implicitly_wait(10)
+# 隐性等待
+driver.implicitly_wait(10)
 
 ele = driver.find_element_by_id("kw")
-ele.send_keys("柠檬班")
+ele.send_keys(u"柠檬班")
 driver.find_element_by_id("su").click()
 
 
