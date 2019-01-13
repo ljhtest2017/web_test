@@ -1,0 +1,174 @@
+第六章 pytest框架
+6.1 简介
+    pytest是基于unittest之上的单元测试框架
+    1 自动发现测试模块和测试方法
+    2 断言使用assert+表达式即可
+    3 可以设置会话级、模块级、类级、函数级的fixtures
+    4 有丰富的插件库，目前在300哥以上
+
+    在线安装命令
+        pip install pytest
+        安装html报告插件
+        pip install pytest-html
+        插件地址
+            http://plugincompat.herokuapp.com/
+
+6.2 pytest收集测试用例的规则
+    1 默认从当前目录中收集测试用例，即在哪个 目录下运行pytest命令，则从哪个目录当中搜索
+    2 搜索规则：
+        1 符合命令规则test_*.py 或者*_test.py的文件
+        2 以test_开头的函数名
+        3 以Test开头的测试类（没有__init__函数）当中，以test_开头的函数
+
+6.3 Mark功能
+    使用mark功能，给测试用例打标签
+    在运行测试用例的时候，可根据标签名来过滤要运行的测试用例
+    打标签的方法：
+        在测试用列/测试类前面加上：@pytest.mark.标记名
+    示例：
+        import unittest
+        import pytest
+        class TestDemo(unittest.TestCase):
+            @pytest.mark.smoke
+            def test_first(self):
+                print("first test case")
+
+6.4 Fixture使用
+    fixture:即测试用例执行的环境准备和清理
+    在unittest中即用setup() teardown() classSetup() classTeardown()
+    fixture主要的目的是为了提供一种可靠和可重复的手段去运行那些最基本的测试内容
+    比如在测试网站的功能时，每个测试用例都要登录和退出，利用fixture就可以只做一次，否则每个测试用例都要做着两步也是冗余
+
+    定义
+        把一个函数定义为fixture很简单，在函数声明之前加上@pytest.fixture
+        表示此函数为测试环境数据的准备和清理
+        那么在一个fixture内部如何区分环境准备、环境清理
+        在函数内使用yield关键字
+        yield关键字以后的代码，就是环境清理的代码，即测试用例执行完成之后会执行的代码
+
+    作用域：
+        fixture的参数中，有scope作用域：
+            function: 每个test都运行，默认是function的scope。即unittest中setup()和Teardown()
+            class: 每个class的所有test只运行一次。即unittest中的setupClass()和TeardownClass()
+            module: 每个module的所有test只运行一次
+            session：每个session只运行一次
+
+    fixture中设置返回值
+        有的时候，我们在测试环境初始化时，会对资源进行处理后，在测试用例中要使用这资源。
+
+    yield返回值
+
+测试报告
+    pytest可以生成多种样式的结果：
+    1 生成JunitXML格式的测试报告 --junitxml=path
+    2 生成result.log格式的测试报告：--resultlog=report\log.txt
+    3 生成html格式的测试报告：--html=report\test_one_func.html
+
+运行命令
+    pytest提供了多种选择来执行测试用例。可以指定某个用例、某个模块下用例执行
+        1 指定测试模块： pytest test_mod.py
+        2 指定测试目录：pytest testting/
+        3 通过关键字表达式过滤执行
+            pytest -k "MyClass and not method"
+            这条命令匹配文件名、类名、方法名匹配表达式的用例
+        4 通过节点id来运行测试：
+            节点id组成： py模块：：类名：：函数名 或者 py模块名：：函数名
+            示例：pytest test_xx.py::TestXX::func_XXX
+        5 通过标签表达式执行
+            pytest -m 标签名
+            示例
+                运行包括冒烟标签的测试用例，并生成html和junitxml测试报告
+                pytest 命令如下
+                pytest -m smoke --html report\test.html --junitxml report\junitxml.xml
+
+        6 pytest --help 可以看到所有支持的命令
+
+第七章 实战部分
+    自动化用例设计原则
+        1 不是所有的手工用例都要转为自动化测试用例
+        2 考虑到脚本开发的成本，不要选择流程太复杂的用例。如果有必要，可以考虑吧流程拆分成多个用例来实现脚本。
+        3 选择的用例，最好可以构建场景。例如，一个功能模块，分成多个用例，多个用例使用同一场景
+        4 选择的用例可以带有目的性。例如，这部分的用例做冒烟测试，那部分用例做回归测试等，当然，会存在重叠的关系。如果当前用例不能满足需求，那么唯有修改用例来适应脚本和需求
+        5 选取的用例可以是你认为重复执行，很繁琐的部分，例如，字段验证，提示信息验证这类，这部分用于回归测试。
+        6 选择的用例可以是主体流程，这部分适用于冒烟测试
+        7 自动化测试也可以用例做配置检查、数据库检查。这些可能超出了手工用例，但也算用例拓展的一部分，项目负责人可以有选择增加
+        8 平时在手工测试时，如果需要购置一些复杂的数据或重复一些简单的机械动作，则告诉自动化脚本，让它来帮你，或许你的效率会因此得到帮助
+    在编写自动化测试用例过程中应该遵守以下几点原则：
+        1 一个用例为一个完整的场景，从用户登录系统到最终退出并关闭浏览器
+        2 一个用例只验证一个功能点，不要试图在用例登录系统后把所有的功能都验证一遍
+        3 尽量少的编写逆向逻辑用例。一方面以为逆向逻辑的用例很多（例如，手号输错有几十种情况）；另一方面自动化脚本本身比较脆弱，对于复杂的逆向逻辑用例实现麻烦且容易出错
+        4 用例与用例之间尽量避免产生依赖
+        5 一条用例完成测试之后需要对测试场景进行还原，以免影响其他用例的执行
+
+PO设计模式
+    将页面的元素和元素行为封装成一个page类。实现页面对象和测试用例分离
+    在测试用例中，调用所需页面对象中的行为，组成测试用例
+
+    优势：
+        1 当某个页面的元素发生变化，只需要修改页面对象中的代码即可，测试用例不需要修改
+        2 提高代码重用率、结构清晰、维护代码更容易
+        3 测试用例发生变化是，不需要或只需要修改少数页面对象代码即可
+        示例：
+BasePage提取
+    在po模式中，我们做到了页面对象和测试用例的分离，但是字页面对象编写时，我们还可以优化
+    页面对象有一些共同的基本操作，可以封装起来，并可以在基本操作当中，加上日志和截图处理
+    比如说我们在查找元素时，都需要等待。在po模式当中，都需要写上等待和查找元素，那么就可以将其封装起来
+    还有，对于alert弹出框的处理、窗口切换等等
+
+
+用例管理和运行设置
+    web自动化最主要的应用场景是对历史功能的冒烟和回归
+    所以在设计测试用例时，会从回归用例当中挑选部分作为冒烟
+    那么pytest框架章节的mark功能则足以完成用例的分类
+
+    用例重试机制
+    pytest提供了失败重试机制
+    插件名称 rerunfailues
+    pip install pytest-rerunfailures
+    使用方式
+    命令行参数：
+        pytest --reruns 重试次数
+        pytest --reruns 2   表示：运行失败的用例可以重新运行2此
+        pytest --reruns 重试次数 --reruns-delay 次数直接延时设置（单位：秒）
+        pytest --reruns 2 --reruns-delay 5
+        表示失败的用例可以重新运行2次，第一次和第二次的间隔时间为5秒钟
+
+    测试数据参数化
+        在某一些业务场景中，只有测试数据和验证数据不同，整个用例流程都是一模一样的，
+        这种情况我们可以节省测试用例代码，只要写一个测试用例代码，传一组数据进去。这组数据当中的每一项数据都已一个测试用例
+        pytest提供了参数化的功能
+        在测试用例的前面加上：
+        @pytest.mark.parametrize("参数名"，列表数据）
+        参数名：用例接收每一项数据，并作为测试用例的参数
+        列表数据：一组测试数据
+        示例：
+        no_data = [
+            {
+                "username": "1234567890",
+                "passwd": "",
+                "check": "请输入密码"
+            },
+             {
+                "username": "",
+                "passwd": "1234567890",
+                "check": "请输入用户名"
+            }
+        ]
+        @pytest.mark.parametrize("testDatas", no_data)
+        def test_login_noData(self, init_web, testDatas)
+            # 步骤 # 2 输入用户名、密码、点击登录
+            lp = LoginPage(init_web)
+            lp.login(testDatas['username'], testDatas['passwd'])
+
+            # 比对 错误提示：请输入密码
+            try：
+                logging.info("当用户名、密码不正确时，比对提示信息是否正确"）
+                assert lp.get_errorMsg_formLoginArea() == testDatas["check"]
+            execpt Eception as e:
+                logging.exception("比对失败："）
+                raise e
+
+
+
+7.6 Jenkins集成
+
